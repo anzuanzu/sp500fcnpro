@@ -1,0 +1,3150 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finviz SMA200 篩選器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            /* slate-900 */
+            --text-primary: #f8fafc;
+            /* slate-50 */
+            --text-secondary: #94a3b8;
+            /* slate-400 */
+            --card-bg: rgba(30, 41, 59, 0.7);
+            /* slate-800 with transparency */
+            --border-color: rgba(71, 85, 105, 0.5);
+            /* slate-600 with transparency */
+            --hover-bg: rgba(51, 65, 85, 0.5);
+            /* slate-700 with transparency */
+            --accent-color: #38bdf8;
+            /* sky-400 */
+            --success-color: #4ade80;
+            /* green-400 */
+            --danger-color: #ef4444;
+            /* red-500 */
+        }
+
+        .light-mode {
+            --bg-color: #f8fafc;
+            /* slate-50 */
+            --text-primary: #0f172a;
+            /* slate-900 */
+            --text-secondary: #475569;
+            /* slate-600 */
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(203, 213, 225, 0.8);
+            /* slate-300 with transparency */
+            --hover-bg: rgba(241, 245, 249, 0.8);
+            /* slate-100 with transparency */
+            --accent-color: #0ea5e9;
+            /* sky-500 */
+            --success-color: #22c55e;
+            /* green-500 */
+            --danger-color: #dc2626;
+            /* red-600 */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+            transition: background-color 0.3s ease;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .controls {
+            padding: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-input {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            width: 300px;
+            transition: all 0.2s;
+        }
+
+        .light-mode .search-input {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th {
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: color 0.2s;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            color: var(--text-primary);
+        }
+
+        th span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: var(--hover-bg);
+        }
+
+        .ticker {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .trend-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .trend-bullish {
+            background-color: rgba(74, 222, 128, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+
+        .trend-bearish {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .button {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .button:hover {
+            background-color: #0ea5e9;
+            /* sky-500 */
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .button.secondary:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .input-group input[type="number"] {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            width: 70px;
+            text-align: center;
+            -moz-appearance: textfield;
+            appearance: textfield;
+            /* Firefox */
+        }
+
+        .light-mode .input-group input[type="number"] {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-group input[type="number"]::-webkit-outer-spin-button,
+        .input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .checkbox-wrapper {
+            text-align: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .results-view {
+            display: none;
+            /* Hidden by default */
+            padding-top: 2rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .results-header h2 {
+            font-size: 2rem;
+            color: var(--text-primary);
+        }
+
+        .results-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .result-card {
+            flex: 1 1 300px;
+            max-width: 600px;
+            /* Fixed max-width to prevent stretching too wide */
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .result-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .result-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .result-stat-item strong {
+            color: var(--text-primary);
+        }
+
+        .result-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: auto;
+            /* Allow height to adjust based on image */
+            min-height: 200px;
+            /* Minimum height to prevent collapse before load */
+            background-color: transparent;
+            /* Remove gray background */
+            border-radius: 0.5rem;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-container img {
+            width: 100%;
+            height: auto;
+            /* maintain aspect ratio */
+            object-fit: contain;
+        }
+
+        .calc-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .calc-row:last-child {
+            border-bottom: none;
+        }
+
+        .calc-label {
+            color: var(--text-secondary);
+        }
+
+        .calc-value {
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            /* Responsive Table Card Layout */
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+            }
+
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            tr {
+                margin-bottom: 1rem;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 0.5rem;
+                overflow: hidden;
+            }
+
+            td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: right;
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid var(--border-color);
+                position: relative;
+            }
+
+            td:last-child {
+                border-bottom: none;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-secondary);
+                text-align: left;
+                margin-right: 1rem;
+            }
+
+            /* Special layout for Company Name to allow full width */
+            td[data-label="公司名稱"] {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+                max-width: none !important;
+                /* Override inline style */
+            }
+
+            td[data-label="公司名稱"]::before {
+                margin-bottom: 0.25rem;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            /* Checkbox centering */
+            td.checkbox-wrapper {
+                justify-content: center;
+                background-color: var(--hover-bg);
+            }
+
+            td.checkbox-wrapper::before {
+                display: none;
+            }
+
+            /* Checkbox centering */
+            td.checkbox-wrapper {
+                justify-content: center;
+                background-color: var(--hover-bg);
+            }
+
+            td.checkbox-wrapper::before {
+                display: none;
+            }
+        }
+
+        /* Filter Panel */
+        .filter-panel {
+            background: rgba(15, 23, 42, 0.3);
+            border-bottom: 1px solid var(--border-color);
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--accent-color);
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .checkbox-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .light-mode .checkbox-list {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+        }
+
+        .checkbox-item:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .range-inputs {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .range-input {
+            width: 80px;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: transparent;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        /* Filter Badge */
+        .filter-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 50px;
+            background: var(--accent-color);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .filter-badge.hidden {
+            display: none;
+        }
+
+        /* Filter Panel Animation */
+        .filter-panel {
+            display: flex !important;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            padding: 0 1.5rem;
+            transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.3s ease;
+        }
+
+        .filter-panel.open {
+            max-height: 600px;
+            opacity: 1;
+            padding: 1.5rem;
+        }
+
+        /* Filter Toggle Group (SMA200) */
+        .filter-toggle-group {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .filter-toggle-group button {
+            flex: 1;
+            padding: 0.4rem 0.8rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-right: 1px solid var(--border-color);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .filter-toggle-group button:last-child {
+            border-right: none;
+        }
+
+        .filter-toggle-group button.active {
+            background: var(--accent-color);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .filter-toggle-group button:hover:not(.active) {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        /* Industry Search Input */
+        .filter-search-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .filter-search-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        /* JPM Toggle */
+        .filter-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding: 0.35rem 0;
+        }
+
+        .filter-toggle-label:hover {
+            color: var(--text-primary);
+        }
+
+        /* Filter Status Bar */
+        .filter-status {
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            min-height: 0;
+            overflow: hidden;
+            transition: min-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+        }
+
+        .filter-status.empty {
+            min-height: 0;
+            padding: 0 1.5rem;
+            opacity: 0;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.6rem;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-color);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .filter-chip .chip-close {
+            cursor: pointer;
+            opacity: 0.6;
+            font-size: 0.9rem;
+            line-height: 1;
+        }
+
+        .filter-chip .chip-close:hover {
+            opacity: 1;
+        }
+
+        /* Chart Tooltip on Ticker Hover */
+        .chart-tooltip {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.15);
+            overflow: hidden;
+            transition: opacity 0.15s ease;
+            opacity: 0;
+        }
+
+        .chart-tooltip.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        .chart-tooltip img {
+            display: block;
+            width: 520px;
+            height: auto;
+            border: none;
+        }
+
+        .chart-tooltip .tooltip-header {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            background: rgba(15, 23, 42, 0.6);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .light-mode .chart-tooltip .tooltip-header {
+            background: rgba(248, 250, 252, 0.9);
+        }
+
+        .chart-tooltip .tooltip-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 520px;
+            height: 300px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Make ticker cells interactive */
+        td.ticker {
+            cursor: pointer;
+            position: relative;
+        }
+
+        td.ticker:hover {
+            color: var(--accent-color);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* ===== Watchlist ===== */
+        .watchlist-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 8000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .watchlist-modal-overlay.open {
+            display: flex;
+        }
+
+        .watchlist-modal {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 640px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .watchlist-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .watchlist-modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .watchlist-modal-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .watchlist-modal-header .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .watchlist-modal-body {
+            padding: 1rem 1.25rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .watchlist-group {
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+
+        .watchlist-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.75rem;
+            background: rgba(15, 23, 42, 0.3);
+            cursor: pointer;
+            gap: 0.5rem;
+        }
+
+        .light-mode .watchlist-group-header {
+            background: rgba(248, 250, 252, 0.8);
+        }
+
+        .watchlist-group-header:hover {
+            background: var(--hover-bg);
+        }
+
+        .watchlist-group-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .watchlist-group-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: rgba(56, 189, 248, 0.15);
+            padding: 0.15rem 0.5rem;
+            border-radius: 50px;
+        }
+
+        .watchlist-group-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .watchlist-group-actions button {
+            background: none;
+            border: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            color: var(--text-secondary);
+        }
+
+        .watchlist-group-actions button:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .watchlist-group-body {
+            display: none;
+            padding: 0.5rem 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .watchlist-group-body.open {
+            display: flex;
+        }
+
+        .watchlist-ticker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .watchlist-ticker .remove-ticker {
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 0.75rem;
+        }
+
+        .watchlist-ticker .remove-ticker:hover {
+            opacity: 1;
+        }
+
+        .watchlist-empty {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            padding: 0.25rem 0;
+            font-style: italic;
+        }
+
+        .watchlist-modal-footer {
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .watchlist-modal-footer input {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .watchlist-add-btn {
+            background: var(--accent-color) !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.5rem !important;
+            font-size: 0.9rem !important;
+            cursor: pointer !important;
+            font-weight: 600 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        .watchlist-add-btn:hover {
+            opacity: 0.85;
+        }
+
+        .watchlist-add-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed !important;
+        }
+
+        /* Watchlist dropdown for adding selected stocks */
+        .watchlist-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .watchlist-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 200px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            padding: 0.25rem 0;
+            margin-top: 4px;
+        }
+
+        .watchlist-dropdown-menu.open {
+            display: block;
+        }
+
+        .watchlist-dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: none;
+            border: none;
+            text-align: left;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .watchlist-dropdown-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .watchlist-dropdown-sep {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.25rem 0;
+        }
+
+        /* Search Clear Button */
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-wrapper input {
+            padding-right: 2rem;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            display: none;
+        }
+
+        .search-clear:hover {
+            color: var(--text-primary);
+        }
+
+        .search-clear.visible {
+            display: block;
+        }
+
+        /* ===== Quick Filter Presets ===== */
+        .preset-bar {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preset-bar-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-right: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .preset-btn {
+            padding: 0.35rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-color);
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .preset-btn.bullish {
+            border-left: 3px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .preset-btn.bearish {
+            border-left: 3px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .preset-btn.neutral {
+            border-left: 3px solid #eab308;
+        }
+
+        .preset-edit-btn {
+            padding: 0.3rem 0.5rem;
+            border: 1px dashed var(--border-color);
+            border-radius: 50px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .preset-edit-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        /* Preset Edit Modal */
+        .preset-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 8000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .preset-modal-overlay.open {
+            display: flex;
+        }
+
+        .preset-modal {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 480px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .preset-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preset-modal-header h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+        }
+
+        .preset-modal-body {
+            padding: 1rem 1.25rem;
+        }
+
+        .preset-field {
+            margin-bottom: 0.75rem;
+        }
+
+        .preset-field label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .preset-field input,
+        .preset-field select {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        .preset-field .range-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .preset-field .range-row input {
+            flex: 1;
+        }
+
+        .preset-modal-footer {
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .preset-modal-footer button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+        .preset-modal-footer .save-btn {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            font-weight: 600;
+        }
+
+        /* Quick add to watchlist bar */
+        .preset-result-bar {
+            padding: 0.5rem 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(56, 189, 248, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .preset-result-bar.visible {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body class="light-mode">
+    <!-- Chart Tooltip -->
+    <div id="chartTooltip" class="chart-tooltip">
+        <div class="tooltip-header"><span>📈</span> <span id="tooltipTicker"></span></div>
+        <div id="tooltipBody">
+            <div class="tooltip-loading">載入中...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Finviz SMA200 篩選器</h1>
+            <p class="subtitle">快速篩選並計算股票的關鍵價格點</p>
+        </header>
+        <main id="mainView">
+            <div class="glass-panel">
+                <div class="controls">
+                    <div class="search-box"><svg class="search-icon" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <div class="search-wrapper"><input type="text" id="searchInput" class="search-input"
+                                placeholder="搜尋代碼或公司名稱..."><button class="search-clear" id="searchClear"
+                                onclick="clearSearch()" title="清除搜尋">✕</button></div><button class="button secondary"
+                            onclick="clearAllSelections()"
+                            style="padding: 0.4rem 0.75rem; font-size: 0.8rem; white-space: nowrap;" title="清除所有勾選">✕
+                            清除勾選</button>
+                    </div>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div class="input-group">
+                            <label for="inputKO">KO%</label>
+                            <input type="number" id="inputKO" value="100" style="width: 80px;">
+                        </div>
+                        <div class="input-group">
+                            <label for="inputK">K%</label>
+                            <input type="number" id="inputK" value="80" style="width: 80px;">
+                        </div>
+                        <div class="input-group">
+                            <label for="inputKI">KI%</label>
+                            <input type="number" id="inputKI" value="65" style="width: 80px;">
+                        </div>
+                        <button class="button" onclick="calculateSelected()">計算已選 (<span
+                                id="selectedCount">0</span>)</button><button class="button secondary" id="filterToggle"
+                            onclick="toggleFilterPanel()">🔍 進階篩選<span id="filterBadge"
+                                class="filter-badge hidden">0</span></button><button class="button secondary"
+                            id="etfToggle" onclick="toggleETFExclusion()">排除 ETF</button><button
+                            class="button secondary" id="themeToggle" onclick="toggleTheme()">☀️ 一般模式</button><button
+                            class="button secondary" onclick="openWatchlistModal()">📋 觀察名單</button>
+                        <div class="watchlist-dropdown" id="watchlistDropdown"><button class="button secondary"
+                                onclick="toggleWatchlistDropdown()" id="addToWatchlistBtn" disabled>➕ 加入觀察名單</button>
+                            <div class="watchlist-dropdown-menu" id="watchlistDropdownMenu"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="filterPanel" class="filter-panel">
+                    <div class="filter-section"><label class="filter-label">板塊 (Sector) <select id="sectorMode"
+                                onchange="updateDisplay()"
+                                style="padding: 0.25rem; border-radius: 0.25rem; font-size: 0.8rem;">
+                                <option value="include">包含</option>
+                                <option value="exclude">排除</option>
+                            </select></label>
+                        <div class="checkbox-list" id="sectorList"><!-- Populated by JS --></div>
+                        <div style="font-size: 0.8rem; display: flex; gap: 0.5rem;"><a href="#"
+                                onclick="toggleAllSectors(true); return false;">全選</a><a href="#"
+                                onclick="toggleAllSectors(false); return false;">全不選</a></div>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">股價範圍 (Price)</label>
+                        <div class="range-inputs"><input type="number" id="priceMin" class="range-input"
+                                placeholder="Min" oninput="debouncedUpdate()"><span>-</span><input type="number"
+                                id="priceMax" class="range-input" placeholder="Max" oninput="debouncedUpdate()"></div>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">市值範圍 (Market Cap, B)</label>
+                        <div class="range-inputs"><input type="number" id="capMin" class="range-input"
+                                placeholder="Min B" oninput="debouncedUpdate()"><span>-</span><input type="number"
+                                id="capMax" class="range-input" placeholder="Max B" oninput="debouncedUpdate()"></div>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">SMA200 趨勢</label>
+                        <div class="filter-toggle-group" id="smaToggle">
+                            <button class="active" onclick="setSmaFilter('all')">全部</button>
+                            <button onclick="setSmaFilter('bullish')">↑ 多頭</button>
+                            <button onclick="setSmaFilter('bearish')">↓ 空頭</button>
+                        </div>
+                        <label class="filter-toggle-label"><input type="checkbox" id="jpmOnly"
+                                onchange="updateDisplay()"> 僅顯示 JPM 精選</label>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">產業 (Industry) <select id="industryMode"
+                                onchange="updateDisplay()"
+                                style="padding: 0.25rem; border-radius: 0.25rem; font-size: 0.8rem;">
+                                <option value="include">包含</option>
+                                <option value="exclude">排除</option>
+                            </select></label>
+                        <div class="checkbox-list" id="industryList" style="max-height: 180px;"><!-- Populated by JS -->
+                        </div>
+                        <div style="font-size: 0.8rem; display: flex; gap: 0.5rem;"><a href="#"
+                                onclick="toggleAllIndustries(true); return false;">全選</a><a href="#"
+                                onclick="toggleAllIndustries(false); return false;">全不選</a></div>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">周績效 (Perf Week %)</label>
+                        <div class="range-inputs"><input type="number" id="perfWeekMin" class="range-input"
+                                placeholder="Min %" step="0.1" oninput="debouncedUpdate()"><span>-</span><input
+                                type="number" id="perfWeekMax" class="range-input" placeholder="Max %" step="0.1"
+                                oninput="debouncedUpdate()"></div>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">月績效 (Perf Month %)</label>
+                        <div class="range-inputs"><input type="number" id="perfMonthMin" class="range-input"
+                                placeholder="Min %" step="0.1" oninput="debouncedUpdate()"><span>-</span><input
+                                type="number" id="perfMonthMax" class="range-input" placeholder="Max %" step="0.1"
+                                oninput="debouncedUpdate()"></div>
+                    </div>
+                    <div class="filter-section"><label class="filter-label">周波動率 (Volatility %)</label>
+                        <div class="range-inputs"><input type="number" id="volMin" class="range-input"
+                                placeholder="Min %" step="0.1" oninput="debouncedUpdate()"><span>-</span><input
+                                type="number" id="volMax" class="range-input" placeholder="Max %" step="0.1"
+                                oninput="debouncedUpdate()"></div>
+                    </div>
+                    <div class="filter-actions"><button class="button secondary"
+                            onclick="resetFilters()">重置條件</button><button class="button"
+                            onclick="toggleFilterPanel()">收起</button></div>
+                </div>
+                <div id="filterStatus" class="filter-status empty"></div>
+                <div class="preset-bar">
+                    <span class="preset-bar-label">⚡ 一鍵篩選:</span>
+                    <button class="preset-btn neutral" onclick="applyPreset(0)">高波動率</button>
+                    <button class="preset-btn bullish" onclick="applyPreset(1)">多頭本周大跌</button>
+                    <button class="preset-btn bullish" onclick="applyPreset(2)">多頭本周大漲</button>
+                    <button class="preset-btn bullish" onclick="applyPreset(3)">多頭本月大跌</button>
+                    <button class="preset-btn bullish" onclick="applyPreset(4)">多頭本月大漲</button>
+                    <button class="preset-btn bearish" onclick="applyPreset(5)">空頭本周大跌</button>
+                    <button class="preset-btn bearish" onclick="applyPreset(6)">空頭本周大漲</button>
+                    <button class="preset-btn bearish" onclick="applyPreset(7)">空頭本月大跌</button>
+                    <button class="preset-btn bearish" onclick="applyPreset(8)">空頭本月大漲</button>
+                    <button class="preset-edit-btn" onclick="openPresetEditor()">⚙️ 自訂</button>
+                </div>
+                <div class="preset-result-bar" id="presetResultBar">
+                    <span id="presetResultLabel"></span>
+                    <button class="button secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem;"
+                        onclick="selectAllFiltered()">全選篩選結果</button>
+                    <button class="button secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem;"
+                        onclick="clearPreset()">清除一鍵篩選</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;"></th>
+                                <!-- Checkbox column -->
+                                <th data-key="Ticker" onclick="handleSort('Ticker')"><span>代碼 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Company" onclick="handleSort('Company')"><span>公司名稱 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Price" onclick="handleSort('Price')"><span>價格 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Perf Week" onclick="handleSort('Perf Week')"><span>周績效 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Perf Month" onclick="handleSort('Perf Month')"><span>月績效 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Volatility W" onclick="handleSort('Volatility W')"><span>周波動率 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="SMA200" onclick="handleSort('SMA200')"><span>SMA200 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Market Cap" onclick="handleSort('Market Cap')"><span>市值 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Sector" onclick="handleSort('Sector')"><span>板塊 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th data-key="Industry" onclick="handleSort('Industry')"><span>產業 <span
+                                            class="sort-icon">↕</span></span></th>
+                                <th><span>財報與評等</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="12" class="loading">載入中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="controls"
+                    style="justify-content: center; border-top: 1px solid var(--border-color); border-bottom: none;">
+                    <span id="statusCount" style="color: var(--text-secondary); font-size: 0.9rem;"></span>
+                </div>
+            </div>
+        </main>
+        <div id="resultsView" class="results-view">
+            <div class="results-header">
+                <h2>計算結果</h2><button class="button secondary" onclick="showMainView()">返回列表</button>
+            </div>
+            <div class="results-grid" id="resultsContainer">
+                <!-- Calculation results will be rendered here -->
+            </div>
+        </div>
+    </div>
+    <script>const TARGET_URL = 'https://pub-1434d512b03145d98095bbff4adf4b4a.r2.dev/finviz_data.json';
+        const PROXIES = ['https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://api.codetabs.com/v1/proxy?quest=',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
+
+        const JPM_BEST_IDEAS_2026 = {
+
+            // AI 半導體與科技相關
+            'GOOG': {
+                name: '谷歌-C', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'AVGO': {
+                name: '博通', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'ANET': {
+                name: 'Arista Networks', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'KLAC': {
+                name: '科磊', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'SNPS': {
+                name: '新思科技', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'PANW': {
+                name: 'Palo Alto Networks', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'CRM': {
+                name: '賽富時', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+            'GWRE': {
+                name: 'Guidewire Software', sector: 'AI 半導體與科技相關'
+            }
+
+            ,
+
+            // 電力、能源與基礎建設
+            'GEV': {
+                name: 'GE Vernova', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'VRT': {
+                name: 'Vertiv', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'ETR': {
+                name: '安特吉', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'WMB': {
+                name: '威廉姆斯', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'XOM': {
+                name: '埃克森美孚', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'DVN': {
+                name: '戴文能源', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'CAT': {
+                name: '卡特彼勒', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'CRH': {
+                name: 'CRH水泥', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'VMI': {
+                name: '維蒙特工業', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'CMC': {
+                name: '美國工商五金公司', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+            'SLB': {
+                name: '斯倫貝謝', sector: '電力、能源與基礎建設'
+            }
+
+            ,
+
+            // 醫療保健與生技
+            'LLY': {
+                name: '禮來', sector: '醫療保健與生技'
+            }
+
+            ,
+            'BSX': {
+                name: '波士頓科學', sector: '醫療保健與生技'
+            }
+
+            ,
+            'TMO': {
+                name: '賽默飛世爾', sector: '醫療保健與生技'
+            }
+
+            ,
+            'FOLD': {
+                name: '愛美醫療', sector: '醫療保健與生技'
+            }
+
+            ,
+            'RVMD': {
+                name: 'Revolution Medicines', sector: '醫療保健與生技'
+            }
+
+            ,
+            'XENE': {
+                name: 'Xenon製藥', sector: '醫療保健與生技'
+            }
+
+            ,
+            'CVS': {
+                name: '西維斯健康', sector: '醫療保健與生技'
+            }
+
+            ,
+
+            // 金融保險與房地產
+            'ALL': {
+                name: '好事達', sector: '金融保險與房地產'
+            }
+
+            ,
+            'SCHW': {
+                name: '嘉信理財', sector: '金融保險與房地產'
+            }
+
+            ,
+            'C': {
+                name: '花旗集團', sector: '金融保險與房地產'
+            }
+
+            ,
+            'V': {
+                name: 'Visa', sector: '金融保險與房地產'
+            }
+
+            ,
+            'GL': {
+                name: 'Globe Life', sector: '金融保險與房地產'
+            }
+
+            ,
+            'LC': {
+                name: 'LendingClub', sector: '金融保險與房地產'
+            }
+
+            ,
+            'VLY': {
+                name: '矽谷國家銀行', sector: '金融保險與房地產'
+            }
+
+            ,
+            'TRU': {
+                name: 'TransUnion', sector: '金融保險與房地產'
+            }
+
+            ,
+            'TRTX': {
+                name: 'TPG RE Finance Trust, Inc.', sector: '金融保險與房地產'
+            }
+
+            ,
+            'CBRE': {
+                name: '世邦魏理仕', sector: '金融保險與房地產'
+            }
+
+            ,
+            'DLR': {
+                name: '數字房地產信托公司', sector: '金融保險與房地產'
+            }
+
+            ,
+
+            // 消費與娛樂
+            'AZO': {
+                name: '汽車地帶', sector: '消費與娛樂'
+            }
+
+            ,
+            'SBUX': {
+                name: '星巴克', sector: '消費與娛樂'
+            }
+
+            ,
+            'DIS': {
+                name: '迪士尼', sector: '消費與娛樂'
+            }
+
+            ,
+            'CELH': {
+                name: 'Celsius Holdings', sector: '消費與娛樂'
+            }
+
+            ,
+            'CVNA': {
+                name: 'Carvana', sector: '消費與娛樂'
+            }
+
+            ,
+            'RL': {
+                name: '拉夫勞倫', sector: '消費與娛樂'
+            }
+
+            ,
+            'MKC': {
+                name: '味好美', sector: '消費與娛樂'
+            }
+
+            ,
+            'BFAM': {
+                name: 'Bright Horizons Family Solutions', sector: '消費與娛樂'
+            }
+
+            ,
+            'ROKU': {
+                name: 'Roku Inc', sector: '消費與娛樂'
+            }
+
+            ,
+            'DKNG': {
+                name: 'DraftKings', sector: '消費與娛樂'
+            }
+
+            ,
+            'VIK': {
+                name: 'Viking Holdings', sector: '消費與娛樂'
+            }
+
+            ,
+
+            // 其他產業（通訊與工業原物料等）
+            'BA': {
+                name: '波音', sector: '其他產業'
+            }
+
+            ,
+            'AVY': {
+                name: '艾利丹尼森', sector: '其他產業'
+            }
+
+            ,
+            'MHK': {
+                name: '莫霍克工業公司', sector: '其他產業'
+            }
+
+            ,
+            'PPG': {
+                name: 'PPG工業', sector: '其他產業'
+            }
+
+            ,
+            'UAL': {
+                name: '聯合大陸航空', sector: '其他產業'
+            }
+
+            ,
+            'T': {
+                name: 'AT&T', sector: '其他產業'
+            }
+        };
+
+        let rawData = [];
+
+        let currentSort = {
+            key: 'Ticker', direction: 'asc'
+        };
+        let selectedStocks = new Set();
+        let isNightMode = false;
+        let isETFExcluded = false;
+        let uniqueSectors = new Set();
+        let activeSectors = new Set();
+        let smaFilter = 'all'; // 'all', 'bullish', 'bearish'
+        let industryKeyword = '';
+        let jpmOnlyMode = false;
+        let uniqueIndustries = new Set();
+        let activeIndustries = new Set();
+
+        // Debounce utility
+        function debounce(fn, delay) {
+            let timer;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+        const debouncedUpdate = debounce(updateDisplay, 300);
+
+        function initFilters(data) {
+            uniqueSectors.clear();
+            uniqueIndustries.clear();
+            data.forEach(item => {
+                if (item.Sector) uniqueSectors.add(item.Sector);
+                if (item.Industry) uniqueIndustries.add(item.Industry);
+            });
+
+            // Populate Sector checkboxes
+            const list = document.getElementById('sectorList');
+            list.innerHTML = '';
+            Array.from(uniqueSectors).sort().forEach(sector => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                const safeId = 'sect-' + sector.replace(/[^a-zA-Z0-9]/g, '_');
+                div.innerHTML = '<input type="checkbox" value="' + sector + '" id="' + safeId + '" onchange="handleSectorChange(\'' + sector.replace(/'/g, "\\'") + '\')">' +
+                    '<label for="' + safeId + '">' + sector + '</label>';
+                list.appendChild(div);
+            });
+
+            // Populate Industry checkboxes
+            const indList = document.getElementById('industryList');
+            indList.innerHTML = '';
+            Array.from(uniqueIndustries).sort().forEach(ind => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                const safeId = 'ind-' + ind.replace(/[^a-zA-Z0-9]/g, '_');
+                div.innerHTML = '<input type="checkbox" value="' + ind + '" id="' + safeId + '" onchange="handleIndustryChange(\'' + ind.replace(/'/g, "\\'") + '\')">' +
+                    '<label for="' + safeId + '">' + ind + '</label>';
+                indList.appendChild(div);
+            });
+        }
+
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filterPanel');
+            panel.classList.toggle('open');
+            saveSettings();
+            updatePresetResultBar();
+        }
+
+        function toggleAllSectors(checked) {
+            uniqueSectors.forEach(sector => {
+                const safeId = 'sect-' + sector.replace(/[^a-zA-Z0-9]/g, '_');
+                const cb = document.getElementById(safeId);
+                if (cb) {
+                    cb.checked = checked;
+                    if (checked) activeSectors.add(sector);
+                    else activeSectors.delete(sector);
+                }
+            });
+            updateDisplay();
+        }
+
+        function handleSectorChange(sector) {
+            if (activeSectors.has(sector)) {
+                activeSectors.delete(sector);
+            } else {
+                activeSectors.add(sector);
+            }
+            updateDisplay();
+        }
+
+        function toggleAllIndustries(checked) {
+            uniqueIndustries.forEach(function (ind) {
+                var safeId = 'ind-' + ind.replace(/[^a-zA-Z0-9]/g, '_');
+                var cb = document.getElementById(safeId);
+                if (cb) {
+                    cb.checked = checked;
+                    if (checked) activeIndustries.add(ind);
+                    else activeIndustries.delete(ind);
+                }
+            });
+            updateDisplay();
+        }
+
+        function handleIndustryChange(ind) {
+            if (activeIndustries.has(ind)) {
+                activeIndustries.delete(ind);
+            } else {
+                activeIndustries.add(ind);
+            }
+            updateDisplay();
+        }
+
+        function resetFilters() {
+            toggleAllSectors(false);
+            document.getElementById('priceMin').value = '';
+            document.getElementById('priceMax').value = '';
+            document.getElementById('capMin').value = '';
+            document.getElementById('capMax').value = '';
+            document.getElementById('sectorMode').value = 'include';
+            document.getElementById('perfWeekMin').value = '';
+            document.getElementById('perfWeekMax').value = '';
+            document.getElementById('perfMonthMin').value = '';
+            document.getElementById('perfMonthMax').value = '';
+            document.getElementById('volMin').value = '';
+            document.getElementById('volMax').value = '';
+            toggleAllIndustries(false);
+            document.getElementById('industryMode').value = 'include';
+            document.getElementById('jpmOnly').checked = false;
+            setSmaFilterDirect('all');
+            updateDisplay();
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            body.classList.toggle('light-mode');
+
+            if (body.classList.contains('light-mode')) {
+                btn.textContent = '☀️ 一般模式';
+                isNightMode = false;
+            }
+
+            else {
+                btn.textContent = '🌙 夜間模式';
+                isNightMode = true;
+            }
+        }
+
+        // ETF Exclusion Logic
+        function toggleETFExclusion() {
+            isETFExcluded = !isETFExcluded;
+            const btn = document.getElementById('etfToggle');
+
+            if (isETFExcluded) {
+                btn.style.backgroundColor = 'var(--danger-color)';
+                btn.style.color = '#fff';
+                btn.textContent = '已排除 ETF';
+            }
+
+            else {
+                btn.style.backgroundColor = ''; // Reset to default (secondary class)
+                btn.style.color = '';
+                btn.textContent = '排除 ETF';
+            }
+
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // 1. Gather Filter Values
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const priceMinVal = document.getElementById('priceMin').value;
+            const priceMaxVal = document.getElementById('priceMax').value;
+            const priceMin = priceMinVal !== '' ? parseFloat(priceMinVal) : -Infinity;
+            const priceMax = priceMaxVal !== '' ? parseFloat(priceMaxVal) : Infinity;
+            const capMinVal = document.getElementById('capMin').value;
+            const capMaxVal = document.getElementById('capMax').value;
+            const capMin = capMinVal !== '' ? parseFloat(capMinVal) * 1e9 : -Infinity;
+            const capMax = capMaxVal !== '' ? parseFloat(capMaxVal) * 1e9 : Infinity;
+            const sectorMode = document.getElementById('sectorMode').value;
+            const hasSectorSelection = activeSectors.size > 0;
+            const perfWeekMinVal = document.getElementById('perfWeekMin').value;
+            const perfWeekMaxVal = document.getElementById('perfWeekMax').value;
+            const perfWeekMin = perfWeekMinVal !== '' ? parseFloat(perfWeekMinVal) : -Infinity;
+            const perfWeekMax = perfWeekMaxVal !== '' ? parseFloat(perfWeekMaxVal) : Infinity;
+            const perfMonthMinVal = document.getElementById('perfMonthMin').value;
+            const perfMonthMaxVal = document.getElementById('perfMonthMax').value;
+            const perfMonthMin = perfMonthMinVal !== '' ? parseFloat(perfMonthMinVal) : -Infinity;
+            const perfMonthMax = perfMonthMaxVal !== '' ? parseFloat(perfMonthMaxVal) : Infinity;
+            const volMinVal = document.getElementById('volMin').value;
+            const volMaxVal = document.getElementById('volMax').value;
+            const volMin = volMinVal !== '' ? parseFloat(volMinVal) : -Infinity;
+            const volMax = volMaxVal !== '' ? parseFloat(volMaxVal) : Infinity;
+            const industryMode = (document.getElementById('industryMode') || {}).value || 'include';
+            const hasIndustrySelection = activeIndustries.size > 0;
+            const jpmChecked = (document.getElementById('jpmOnly') || {}).checked || false;
+
+            let processedData = rawData.filter(item => {
+                // Search
+                if (searchTerm) {
+                    const matchesSearch = item.Ticker.toLowerCase().includes(searchTerm) ||
+                        (item.Company || '').toLowerCase().includes(searchTerm);
+                    if (!matchesSearch) return false;
+                }
+
+                // ETF Exclusion
+                if (isETFExcluded) {
+                    const industry = (item.Industry || '').toLowerCase();
+                    if (industry.includes('exchange traded fund') || industry.includes('etf')) {
+                        return false;
+                    }
+                }
+
+                // Watchlist Filter
+                if (activeWatchlistFilter) {
+                    var wl = watchlists.find(function (w) { return w.id === activeWatchlistFilter; });
+                    if (wl && wl.tickers.indexOf(item.Ticker) === -1) return false;
+                }
+
+                // Price Range
+                if (item._price < priceMin || item._price > priceMax) return false;
+
+                // Market Cap Range
+                if (item._marketCapRaw < capMin || item._marketCapRaw > capMax) return false;
+
+                // Perf Week Range
+                if (item._perfWeek < perfWeekMin || item._perfWeek > perfWeekMax) return false;
+
+                // Perf Month Range
+                if (item._perfMonth < perfMonthMin || item._perfMonth > perfMonthMax) return false;
+
+                // Volatility Range
+                if (item._volatility < volMin || item._volatility > volMax) return false;
+
+                // Sector Filter
+                if (hasSectorSelection) {
+                    const itemSector = item.Sector || '';
+                    if (sectorMode === 'include') {
+                        if (!activeSectors.has(itemSector)) return false;
+                    } else {
+                        if (activeSectors.has(itemSector)) return false;
+                    }
+                }
+
+                // SMA200 Trend Filter
+                if (smaFilter === 'bullish' && item._sma200 <= 0) return false;
+                if (smaFilter === 'bearish' && item._sma200 >= 0) return false;
+
+                // Industry Filter
+                if (hasIndustrySelection) {
+                    const itemIndustry = item.Industry || '';
+                    if (industryMode === 'include') {
+                        if (!activeIndustries.has(itemIndustry)) return false;
+                    } else {
+                        if (activeIndustries.has(itemIndustry)) return false;
+                    }
+                }
+
+                // JPM Only
+                if (jpmChecked && !item._isJpmBest) return false;
+
+                return true;
+            });
+
+            // 2. Sort
+            processedData.sort((a, b) => {
+                let valA, valB;
+                const { key, direction } = currentSort;
+                switch (key) {
+                    case 'Price': valA = a._price; valB = b._price; break;
+                    case 'SMA200': valA = a._sma200; valB = b._sma200; break;
+                    case 'Volatility W': valA = a._volatility; valB = b._volatility; break;
+                    case 'Perf Week': valA = a._perfWeek; valB = b._perfWeek; break;
+                    case 'Perf Month': valA = a._perfMonth; valB = b._perfMonth; break;
+                    case 'Market Cap': valA = a._marketCapRaw; valB = b._marketCapRaw; break;
+                    default: valA = (a[key] || '').toString().toLowerCase(); valB = (b[key] || '').toString().toLowerCase();
+                }
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // 3. Render
+            renderTable(processedData);
+            updateStats(processedData);
+            updateFilterBadge();
+            updateFilterStatus();
+            saveSettings();
+        }
+
+        function processData(data) {
+            // Transform data to ensure numbers are numbers
+            rawData = data.map(item => {
+                const jpmInfo = JPM_BEST_IDEAS_2026[item.Ticker] || {};
+                return {
+                    ...item,
+                    _price: parseFloat(item.Price) || 0,
+                    _sma200: parseFloat(item.SMA200.replace('%', '')) || 0,
+                    _volatility: parseFloat(item["Volatility W"].replace('%', '')) || 0,
+                    _perfWeek: parseFloat(item["Perf Week"].replace('%', '')) || 0,
+                    _perfMonth: parseFloat(item["Perf Month"].replace('%', '')) || 0,
+                    _marketCapRaw: parseMarketCap(item["Market Cap"]),
+                    _isJpmBest: !!jpmInfo.name,
+                    _jpmSector: jpmInfo.sector || ''
+                };
+            });
+
+            initFilters(rawData);
+            loadWatchlists();
+            restoreSettings();
+            updateDisplay();
+        }
+
+        // Selection Logic
+        function toggleSelection(ticker) {
+            if (selectedStocks.has(ticker)) {
+                selectedStocks.delete(ticker);
+            }
+
+            else {
+                if (selectedStocks.size >= 5) {
+                    alert('最多只能選擇 5 檔個股');
+                    // Uncheck the box that was just clicked
+                    const checkbox = document.querySelector(`input[data-ticker="${ticker}"]`);
+                    if (checkbox) checkbox.checked = false;
+                    return;
+                }
+
+                selectedStocks.add(ticker);
+            }
+
+            updateSelectedCount();
+        }
+
+        function clearAllSelections() {
+            selectedStocks.clear();
+            document.querySelectorAll('input[data-ticker]').forEach(function (cb) { cb.checked = false; });
+            updateSelectedCount();
+            saveSettings();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedStocks.size;
+            updateAddToWatchlistBtn();
+        }
+
+        // Calculation Logic
+        function calculateSelected() {
+            if (selectedStocks.size === 0) {
+                alert('請至少選擇一檔個股');
+                return;
+            }
+
+            const koPct = parseFloat(document.getElementById('inputKO').value) || 100;
+            const kPct = parseFloat(document.getElementById('inputK').value) || 80;
+            const kiPct = parseFloat(document.getElementById('inputKI').value) || 65;
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '';
+
+            const selectedData = rawData.filter(d => selectedStocks.has(d.Ticker));
+
+            selectedData.forEach(item => {
+                const price = item._price;
+                const koPrice = (price * koPct / 100).toFixed(2);
+                const kPrice = (price * kPct / 100).toFixed(2);
+                const kiPrice = (price * kiPct / 100).toFixed(2);
+
+                // Construct Chart URL
+                const chartUrl = `https://charts2-node.finviz.com/chart.ashx?cs=&t=${item.Ticker}&tf=d&s=linear&pm=240&am=1200&ct=candle_stick&o[0][ot]=sma&o[0][op]=50&o[0][oc]=FF8F33C6&o[1][ot]=sma&o[1][op]=200&o[1][oc]=DCB3326D&o[2][ot]=patterns&o[2][op]=&o[2][oc]=000&sf=2`;
+
+                const isBullish = item._sma200 > 0;
+                const trendClass = isBullish ? 'trend-bullish' : 'trend-bearish';
+                const trendText = isBullish ? '多頭' : '空頭';
+
+                const card = document.createElement('div');
+                card.className = 'result-card glass-panel';
+
+                card.innerHTML = ` <div class="result-header" > <div class="result-title" >${item.Ticker} </div> <div class="result-stats" > <div class="result-stat-item" >最新股價: <strong>$${item.Price} </strong></div> <div class="result-stat-item" >趨勢: <span class="trend-badge ${trendClass}" >${trendText} (${item.SMA200})</span></div> <div class="result-stat-item" >周波動率: <strong>${item["Volatility W"]} </strong></div> </div> </div> <div class="result-body" > <div class="chart-container" > <img src="${chartUrl}" alt="${item.Ticker} Chart" loading="lazy" > </div> <div class="calc-info" > <div class="calc-row" > <span class="calc-label" >KO (${koPct} %)</span> <span class="calc-value" style="color: var(--success-color)" >$${koPrice} </span> </div> <div class="calc-row" > <span class="calc-label" >K (${kPct} %)</span> <span class="calc-value" style="color: var(--accent-color)" >$${kPrice} </span> </div> <div class="calc-row" > <span class="calc-label" >KI (${kiPct} %)</span> <span class="calc-value" style="color: var(--danger-color)" >$${kiPrice} </span> </div> </div> </div> `;
+                resultsContainer.appendChild(card);
+            });
+
+            document.getElementById('mainView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function showMainView() {
+            document.getElementById('resultsView').style.display = 'none';
+            document.getElementById('mainView').style.display = 'block';
+        }
+
+        async function fetchData() {
+            const statusEl = document.getElementById('statusCount');
+            const tbody = document.getElementById('tableBody');
+
+            // Helper to try fetching with timeout
+            const tryFetch = async (url) => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+                try {
+                    const response = await fetch(url, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status} `);
+                    return await response.json();
+                }
+
+                catch (error) {
+                    clearTimeout(timeoutId);
+                    throw error;
+                }
+            };
+
+            try {
+                statusEl.innerHTML = '正在嘗試直接連線...';
+
+                // 1. Try direct connection first
+                try {
+                    const data = await tryFetch(TARGET_URL);
+                    processData(data);
+                    return;
+                }
+
+                catch (e) {
+                    console.log('Direct fetch failed, trying proxies...', e);
+                }
+
+                // 2. Try proxies
+                for (const proxy of PROXIES) {
+                    const proxyUrl = proxy + encodeURIComponent(TARGET_URL);
+                    const proxyName = new URL(proxy).hostname;
+
+                    statusEl.innerHTML = `正在嘗試代理連線 (${proxyName})...`;
+
+                    try {
+                        console.log(`Trying proxy: ${proxyName} `);
+                        const data = await tryFetch(proxyUrl);
+                        processData(data);
+                        statusEl.innerHTML += ` <span style="color: var(--success-color)">(連線成功)</span>`;
+                        return;
+                    }
+
+                    catch (e) {
+                        console.warn(`Proxy ${proxyName} failed:`, e);
+                    }
+                }
+
+                // 3. Try local fallback
+                statusEl.innerHTML = '正在嘗試讀取本地備份資料...';
+
+                try {
+                    const data = await tryFetch('finviz_data.json');
+                    processData(data);
+                    statusEl.innerHTML = '<span style="color: var(--accent-color)">⚠️ 使用本地備份資料 (非即時)</span>';
+                    return;
+                }
+
+                catch (e) {
+                    console.warn('Local fallback failed:', e);
+                }
+
+                throw new Error('所有連線方式皆失敗 (All connection methods failed)');
+
+            }
+
+            catch (error) {
+                console.error('Error fetching data:', error);
+
+                tbody.innerHTML = ` <tr><td colspan="12" class="loading" style="color: var(--danger-color)"><strong>讀取數據失敗</strong><br><span style="font-size: 0.9em; opacity: 0.8">無法透過任何方式 (直接、代理、本地) 取得資料。<br>錯誤訊息: ${error.message} </span></td></tr>`;
+                statusEl.innerHTML = '<span style="color: var(--danger-color)">讀取失敗</span>';
+            }
+        }
+
+        function parseMarketCap(str) {
+            if (!str) return 0;
+            str = str.toUpperCase();
+            let multiplier = 1;
+            if (str.endsWith('T')) multiplier = 1e12;
+            else if (str.endsWith('B')) multiplier = 1e9;
+            else if (str.endsWith('M')) multiplier = 1e6;
+            return parseFloat(str) * multiplier || 0;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="loading">沒有找到符合的資料</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const isBullish = item._sma200 > 0;
+                const trendClass = isBullish ? 'trend-bullish' : 'trend-bearish';
+                const trendText = isBullish ? '多頭' : '空頭';
+                const trendIcon = isBullish ? '↑' : '↓';
+                const isSelected = selectedStocks.has(item.Ticker) ? 'checked' : '';
+
+                const perfWeekClass = item._perfWeek >= 0 ? 'trend-bullish' : 'trend-bearish';
+                const perfMonthClass = item._perfMonth >= 0 ? 'trend-bullish' : 'trend-bearish';
+
+
+
+                return ` <tr> <td class="checkbox-wrapper" data-label="選取" > <input type="checkbox" data-ticker="${item.Ticker}" onchange="toggleSelection('${item.Ticker}')"${isSelected} > </td> <td class="ticker" data-label="代碼" >${item.Ticker} </td> <td style="max-width: 180px; word-wrap: break-word;" data-label="公司名稱" >${item.Company || '-'} </td> <td class="price" data-label="價格" >$${item.Price} </td> <td data-label="周績效" ><span class="trend-badge ${perfWeekClass}" >${item["Perf Week"] || '-'} </span></td> <td data-label="月績效" ><span class="trend-badge ${perfMonthClass}" >${item["Perf Month"] || '-'} </span></td> <td class="volatility" data-label="周波動率" >${item["Volatility W"]} </td> <td data-label="SMA200" > <span class="trend-badge ${trendClass}" > ${trendIcon} ${item.SMA200} (${trendText}) </span> </td> <td style="white-space: nowrap;" data-label="市值" >${item["Market Cap"] || '-'} </td> <td style="white-space: nowrap;" data-label="板塊" >${item.Sector || '-'} </td> <td style="white-space: nowrap;" data-label="產業" >${item.Industry || '-'} </td> <td data-label="財報與評等" ><a href="https://finviz.com/quote.ashx?t=${item.Ticker}&p=d&b=1&ty=ea" target="_blank" rel="noopener" style="color: var(--accent-color); text-decoration: none; font-weight: 600; font-size: 0.85rem;">📊 查看</a> </td> </tr> `;
+            }).join('');
+        }
+
+        function handleSort(key) {
+            if (currentSort.key === key) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            }
+
+            else {
+                currentSort.key = key;
+
+                if (key === 'Ticker' || key === 'Company' || key === 'Sector' || key === 'Industry') {
+                    currentSort.direction = 'asc';
+                }
+
+                else {
+                    currentSort.direction = 'desc'; // Numbers usually better desc first
+                }
+            }
+
+            // Update header styles
+            document.querySelectorAll('th').forEach(th => {
+                th.classList.remove('active');
+                const icon = th.querySelector('.sort-icon');
+                if (icon) icon.textContent = '↕';
+
+                if (th.dataset.key === key) {
+                    th.classList.add('active');
+                    if (icon) icon.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+                }
+            });
+
+            updateDisplay();
+        }
+
+        function updateStats(data) {
+            const total = data.length;
+            const bullish = data.filter(d => d._sma200 > 0).length;
+            const bearish = total - bullish;
+
+            document.getElementById('statusCount').innerHTML = ` 總計: ${total} | <span style="color: var(--success-color)">多頭: ${bullish} </span>| <span style="color: var(--danger-color)">空頭: ${bearish} </span>`;
+        }
+
+        // SMA Filter Toggle
+        function setSmaFilter(mode) {
+            smaFilter = mode;
+            document.querySelectorAll('#smaToggle button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            updateDisplay();
+        }
+
+        // Filter Badge
+        function updateFilterBadge() {
+            let count = 0;
+            if (activeSectors.size > 0) count++;
+            if (document.getElementById('priceMin').value || document.getElementById('priceMax').value) count++;
+            if (document.getElementById('capMin').value || document.getElementById('capMax').value) count++;
+            if (smaFilter !== 'all') count++;
+            if (document.getElementById('perfWeekMin').value || document.getElementById('perfWeekMax').value) count++;
+            if (document.getElementById('perfMonthMin').value || document.getElementById('perfMonthMax').value) count++;
+            if (document.getElementById('volMin').value || document.getElementById('volMax').value) count++;
+            if (activeIndustries.size > 0) count++;
+            if ((document.getElementById('jpmOnly') || {}).checked) count++;
+            if (isETFExcluded) count++;
+            if (activeWatchlistFilter) count++;
+
+            const badge = document.getElementById('filterBadge');
+            if (badge) {
+                badge.textContent = count;
+                badge.classList.toggle('hidden', count === 0);
+            }
+        }
+
+        // Filter Status Chips
+        function updateFilterStatus() {
+            const bar = document.getElementById('filterStatus');
+            if (!bar) return;
+            const chips = [];
+            const total = rawData.length;
+            const tbody = document.getElementById('tableBody');
+            const shown = tbody ? tbody.querySelectorAll('tr').length : 0;
+
+            if (activeWatchlistFilter) {
+                var awl = watchlists.find(function (w) { return w.id === activeWatchlistFilter; });
+                if (awl) chips.push(makeChip('觀察: ' + awl.name, function () { activeWatchlistFilter = null; updateDisplay(); }));
+            }
+            if (isETFExcluded) chips.push(makeChip('排除 ETF', function () { toggleETFExclusion(); }));
+            if (activeSectors.size > 0) {
+                const mode = document.getElementById('sectorMode').value === 'include' ? '包含' : '排除';
+                const names = Array.from(activeSectors).slice(0, 3).join(', ');
+                const suffix = activeSectors.size > 3 ? ' +' + (activeSectors.size - 3) : '';
+                chips.push(makeChip(mode + ': ' + names + suffix, function () { toggleAllSectors(false); }));
+            }
+            if (document.getElementById('priceMin').value || document.getElementById('priceMax').value) {
+                const min = document.getElementById('priceMin').value || '0';
+                const max = document.getElementById('priceMax').value || '∞';
+                chips.push(makeChip('價格: $' + min + '-$' + max, function () { document.getElementById('priceMin').value = ''; document.getElementById('priceMax').value = ''; updateDisplay(); }));
+            }
+            if (document.getElementById('capMin').value || document.getElementById('capMax').value) {
+                const min = document.getElementById('capMin').value || '0';
+                const max = document.getElementById('capMax').value || '∞';
+                chips.push(makeChip('市值: ' + min + 'B-' + max + 'B', function () { document.getElementById('capMin').value = ''; document.getElementById('capMax').value = ''; updateDisplay(); }));
+            }
+            if (document.getElementById('perfWeekMin').value || document.getElementById('perfWeekMax').value) {
+                var pwMin = document.getElementById('perfWeekMin').value || '-∞';
+                var pwMax = document.getElementById('perfWeekMax').value || '∞';
+                chips.push(makeChip('周績效: ' + pwMin + '%-' + pwMax + '%', function () { document.getElementById('perfWeekMin').value = ''; document.getElementById('perfWeekMax').value = ''; updateDisplay(); }));
+            }
+            if (document.getElementById('perfMonthMin').value || document.getElementById('perfMonthMax').value) {
+                var pmMin = document.getElementById('perfMonthMin').value || '-∞';
+                var pmMax = document.getElementById('perfMonthMax').value || '∞';
+                chips.push(makeChip('月績效: ' + pmMin + '%-' + pmMax + '%', function () { document.getElementById('perfMonthMin').value = ''; document.getElementById('perfMonthMax').value = ''; updateDisplay(); }));
+            }
+            if (document.getElementById('volMin').value || document.getElementById('volMax').value) {
+                var vMin = document.getElementById('volMin').value || '0';
+                var vMax = document.getElementById('volMax').value || '∞';
+                chips.push(makeChip('波動率: ' + vMin + '%-' + vMax + '%', function () { document.getElementById('volMin').value = ''; document.getElementById('volMax').value = ''; updateDisplay(); }));
+            }
+            if (smaFilter !== 'all') {
+                const label = smaFilter === 'bullish' ? '多頭' : '空頭';
+                chips.push(makeChip('SMA200: ' + label, function () { setSmaFilterDirect('all'); }));
+            }
+            if (activeIndustries.size > 0) {
+                const iMode = (document.getElementById('industryMode') || {}).value === 'include' ? '包含' : '排除';
+                const iNames = Array.from(activeIndustries).slice(0, 2).join(', ');
+                const iSuffix = activeIndustries.size > 2 ? ' +' + (activeIndustries.size - 2) : '';
+                chips.push(makeChip('產業' + iMode + ': ' + iNames + iSuffix, function () { toggleAllIndustries(false); }));
+            }
+            if ((document.getElementById('jpmOnly') || {}).checked) {
+                chips.push(makeChip('JPM 精選', function () { document.getElementById('jpmOnly').checked = false; updateDisplay(); }));
+            }
+
+            if (chips.length === 0) {
+                bar.className = 'filter-status empty';
+                bar.innerHTML = '';
+            } else {
+                bar.className = 'filter-status';
+                bar.innerHTML = '<span>篩選條件 (' + shown + '/' + total + '):</span>';
+                chips.forEach(function (chip) { bar.appendChild(chip); });
+            }
+        }
+
+        function makeChip(text, onRemove) {
+            const chip = document.createElement('span');
+            chip.className = 'filter-chip';
+            chip.innerHTML = text + ' <span class="chip-close" title="移除">✕</span>';
+            chip.querySelector('.chip-close').addEventListener('click', onRemove);
+            return chip;
+        }
+
+        function setSmaFilterDirect(mode) {
+            smaFilter = mode;
+            document.querySelectorAll('#smaToggle button').forEach(function (btn, idx) {
+                btn.classList.toggle('active', (mode === 'all' && idx === 0) || (mode === 'bullish' && idx === 1) || (mode === 'bearish' && idx === 2));
+            });
+            updateDisplay();
+        }
+
+        // Search functionality (debounced)
+        document.getElementById('searchInput').addEventListener('input', debouncedUpdate);
+
+
+        // Chart Tooltip on Ticker Hover
+        const CHART_URL_BASE = 'https://charts2-node.finviz.com/chart.ashx?cs=&t=';
+        const CHART_URL_PARAMS = '&tf=d&s=linear&pm=240&am=1200&ct=candle_stick&o[0][ot]=sma&o[0][op]=50&o[0][oc]=FF8F33C6&o[1][ot]=sma&o[1][op]=200&o[1][oc]=DCB3326D&o[2][ot]=patterns&o[2][op]=&o[2][oc]=000&sf=2';
+        let tooltipTimeout = null;
+        let currentTooltipTicker = '';
+
+        function showChartTooltip(ticker, mouseX, mouseY) {
+            if (currentTooltipTicker === ticker) return;
+            currentTooltipTicker = ticker;
+
+            const tooltip = document.getElementById('chartTooltip');
+            const tickerLabel = document.getElementById('tooltipTicker');
+            const body = document.getElementById('tooltipBody');
+
+            tickerLabel.textContent = ticker;
+            body.innerHTML = '<div class="tooltip-loading">載入 ' + ticker + ' K線圖...</div>';
+
+            // Position tooltip
+            positionTooltip(tooltip, mouseX, mouseY);
+            tooltip.classList.add('visible');
+
+            // Load chart image
+            const img = new Image();
+            img.onload = function () {
+                body.innerHTML = '';
+                body.appendChild(img);
+            };
+            img.onerror = function () {
+                body.innerHTML = '<div class="tooltip-loading" style="color: var(--danger-color);">圖表載入失敗</div>';
+            };
+            img.src = CHART_URL_BASE + encodeURIComponent(ticker) + CHART_URL_PARAMS;
+            img.alt = ticker + ' K-Line Chart';
+        }
+
+        function positionTooltip(tooltip, x, y) {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const tw = 522; // tooltip width + border
+            const th = 360; // approximate height
+
+            // Default: show to the right and below cursor
+            let left = x + 16;
+            let top = y + 16;
+
+            // If tooltip would go off right edge, show to the left
+            if (left + tw > vw - 10) {
+                left = x - tw - 16;
+            }
+            // If tooltip would go off bottom, show above
+            if (top + th > vh - 10) {
+                top = y - th - 16;
+            }
+            // Clamp to viewport
+            if (left < 10) left = 10;
+            if (top < 10) top = 10;
+
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+
+        function hideChartTooltip() {
+            clearTimeout(tooltipTimeout);
+            tooltipTimeout = null;
+            currentTooltipTicker = '';
+            const tooltip = document.getElementById('chartTooltip');
+            tooltip.classList.remove('visible');
+        }
+
+        // Event delegation for ticker hover (works with dynamically rendered rows)
+        document.addEventListener('mouseover', function (e) {
+            const tickerCell = e.target.closest('td.ticker');
+            if (tickerCell) {
+                const ticker = tickerCell.textContent.trim();
+                if (ticker && ticker !== '-') {
+                    clearTimeout(tooltipTimeout);
+                    tooltipTimeout = setTimeout(function () {
+                        showChartTooltip(ticker, e.clientX, e.clientY);
+                    }, 200); // 200ms delay to avoid flicker on fast scroll
+                }
+            }
+        });
+
+        document.addEventListener('mouseout', function (e) {
+            const tickerCell = e.target.closest('td.ticker');
+            if (tickerCell) {
+                clearTimeout(tooltipTimeout);
+                tooltipTimeout = setTimeout(hideChartTooltip, 150);
+            }
+        });
+
+        // Update tooltip position as mouse moves over ticker
+        document.addEventListener('mousemove', function (e) {
+            if (currentTooltipTicker) {
+                const tickerCell = e.target.closest('td.ticker');
+                if (tickerCell) {
+                    positionTooltip(document.getElementById('chartTooltip'), e.clientX, e.clientY);
+                }
+            }
+        });
+
+        // Search Clear Button
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchClear').classList.remove('visible');
+            updateDisplay();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function () {
+            var btn = document.getElementById('searchClear');
+            if (this.value) btn.classList.add('visible');
+            else btn.classList.remove('visible');
+        });
+
+        // ========== Quick Filter Presets ==========
+        const PRESET_STORAGE_KEY = 'sp500_filter_presets';
+        let activePresetIdx = -1;
+
+        var DEFAULT_PRESETS = [
+            { name: '高波動率', etf: true, sma: 'all', perfWeekMin: '', perfWeekMax: '', perfMonthMin: '', perfMonthMax: '', volMin: '5', volMax: '' },
+            { name: '多頭本周大跌', etf: true, sma: 'bullish', perfWeekMin: '', perfWeekMax: '-5', perfMonthMin: '', perfMonthMax: '', volMin: '3', volMax: '' },
+            { name: '多頭本周大漲', etf: true, sma: 'bullish', perfWeekMin: '5', perfWeekMax: '', perfMonthMin: '', perfMonthMax: '', volMin: '3', volMax: '' },
+            { name: '多頭本月大跌', etf: true, sma: 'bullish', perfWeekMin: '', perfWeekMax: '', perfMonthMin: '', perfMonthMax: '-10', volMin: '3', volMax: '' },
+            { name: '多頭本月大漲', etf: true, sma: 'bullish', perfWeekMin: '', perfWeekMax: '', perfMonthMin: '10', perfMonthMax: '', volMin: '3', volMax: '' },
+            { name: '空頭本周大跌', etf: true, sma: 'bearish', perfWeekMin: '', perfWeekMax: '-5', perfMonthMin: '', perfMonthMax: '', volMin: '3', volMax: '' },
+            { name: '空頭本周大漲', etf: true, sma: 'bearish', perfWeekMin: '5', perfWeekMax: '', perfMonthMin: '', perfMonthMax: '', volMin: '3', volMax: '' },
+            { name: '空頭本月大跌', etf: true, sma: 'bearish', perfWeekMin: '', perfWeekMax: '', perfMonthMin: '', perfMonthMax: '-10', volMin: '3', volMax: '' },
+            { name: '空頭本月大漲', etf: true, sma: 'bearish', perfWeekMin: '', perfWeekMax: '', perfMonthMin: '10', perfMonthMax: '', volMin: '3', volMax: '' }
+        ];
+
+        var filterPresets = [];
+
+        function loadPresets() {
+            try {
+                var json = localStorage.getItem(PRESET_STORAGE_KEY);
+                filterPresets = json ? JSON.parse(json) : JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+            } catch (e) {
+                filterPresets = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+            }
+        }
+
+        function savePresets() {
+            try { localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(filterPresets)); } catch (e) { }
+        }
+
+        function applyPreset(idx) {
+            var p = filterPresets[idx];
+            if (!p) return;
+
+            // Reset filters first
+            document.getElementById('searchInput').value = '';
+            document.getElementById('priceMin').value = '';
+            document.getElementById('priceMax').value = '';
+            document.getElementById('capMin').value = '';
+            document.getElementById('capMax').value = '';
+            toggleAllSectors(false);
+            toggleAllIndustries(false);
+            activeWatchlistFilter = null;
+
+            // Apply preset values
+            if (p.etf) {
+                isETFExcluded = true;
+                var etfBtn = document.getElementById('etfToggle');
+                if (etfBtn) { etfBtn.classList.add('active'); etfBtn.textContent = String.fromCharCode(9989) + ' ETF'; }
+            }
+
+            if (p.sma !== 'all') {
+                setSmaFilterDirect(p.sma);
+            } else {
+                setSmaFilterDirect('all');
+            }
+
+            document.getElementById('perfWeekMin').value = p.perfWeekMin || '';
+            document.getElementById('perfWeekMax').value = p.perfWeekMax || '';
+            document.getElementById('perfMonthMin').value = p.perfMonthMin || '';
+            document.getElementById('perfMonthMax').value = p.perfMonthMax || '';
+            document.getElementById('volMin').value = p.volMin || '';
+            document.getElementById('volMax').value = p.volMax || '';
+
+            activePresetIdx = idx;
+            updatePresetButtons();
+            updateDisplay();
+            updatePresetResultBar();
+        }
+
+        function clearPreset() {
+            activePresetIdx = -1;
+            updatePresetButtons();
+            // Reset all filters
+            resetFilters();
+            var bar = document.getElementById('presetResultBar');
+            if (bar) bar.classList.remove('visible');
+        }
+
+        function updatePresetButtons() {
+            var buttons = document.querySelectorAll('.preset-btn');
+            buttons.forEach(function (btn, i) {
+                btn.classList.toggle('active', i === activePresetIdx);
+            });
+        }
+
+        function updatePresetResultBar() {
+            var bar = document.getElementById('presetResultBar');
+            if (!bar) return;
+            if (activePresetIdx < 0) { bar.classList.remove('visible'); return; }
+            var tbody = document.getElementById('tableBody');
+            var count = tbody ? tbody.querySelectorAll('tr').length : 0;
+            var label = document.getElementById('presetResultLabel');
+            if (label) label.textContent = '「' + filterPresets[activePresetIdx].name + '」篩選結果: ' + count + ' 檔';
+            bar.classList.add('visible');
+        }
+
+        function selectAllFiltered() {
+            var checkboxes = document.querySelectorAll('#tableBody input[data-ticker]');
+            checkboxes.forEach(function (cb) {
+                cb.checked = true;
+                selectedStocks.add(cb.getAttribute('data-ticker'));
+            });
+            updateSelectedCount();
+            saveSettings();
+        }
+
+        // ---- Preset Editor ----
+        var editingPresetIdx = -1;
+
+        function openPresetEditor() {
+            loadPresets();
+            renderPresetList();
+            document.getElementById('presetEditorModal').classList.add('open');
+        }
+
+        function closePresetEditor() {
+            document.getElementById('presetEditorModal').classList.remove('open');
+        }
+
+        function renderPresetList() {
+            var body = document.getElementById('presetEditorBody');
+            var html = '';
+            filterPresets.forEach(function (p, i) {
+                html += '<div style="border:1px solid var(--border-color);border-radius:0.5rem;margin-bottom:0.5rem;padding:0.75rem;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">';
+                html += '<strong style="font-size:0.9rem;">' + (i + 1) + '. ' + p.name + '</strong>';
+                html += '<button style="background:none;border:none;cursor:pointer;font-size:0.85rem;color:var(--accent-color);" onclick="editPreset(' + i + ')">編輯</button>';
+                html += '</div>';
+                var desc = [];
+                if (p.etf) desc.push('排除ETF');
+                if (p.sma === 'bullish') desc.push('SMA200 多頭');
+                else if (p.sma === 'bearish') desc.push('SMA200 空頭');
+                if (p.perfWeekMin) desc.push('周績效>=' + p.perfWeekMin + '%');
+                if (p.perfWeekMax) desc.push('周績效<=' + p.perfWeekMax + '%');
+                if (p.perfMonthMin) desc.push('月績效>=' + p.perfMonthMin + '%');
+                if (p.perfMonthMax) desc.push('月績效<=' + p.perfMonthMax + '%');
+                if (p.volMin) desc.push('波動率>=' + p.volMin + '%');
+                if (p.volMax) desc.push('波動率<=' + p.volMax + '%');
+                html += '<div style="font-size:0.8rem;color:var(--text-secondary);">' + desc.join(' | ') + '</div>';
+                html += '</div>';
+            });
+            body.innerHTML = html;
+            document.getElementById('presetEditorTitle').textContent = '自訂篩選條件';
+        }
+
+        function editPreset(idx) {
+            editingPresetIdx = idx;
+            var p = filterPresets[idx];
+            var body = document.getElementById('presetEditorBody');
+            document.getElementById('presetEditorTitle').textContent = '編輯: ' + p.name;
+
+            var html = '';
+            html += '<div class="preset-field"><label>名稱</label><input id="pe_name" value="' + p.name + '"></div>';
+            html += '<div class="preset-field"><label>排除 ETF</label><select id="pe_etf"><option value="true"' + (p.etf ? ' selected' : '') + '>是</option><option value="false"' + (!p.etf ? ' selected' : '') + '>否</option></select></div>';
+            html += '<div class="preset-field"><label>SMA200 趨勢</label><select id="pe_sma"><option value="all"' + (p.sma === 'all' ? ' selected' : '') + '>全部</option><option value="bullish"' + (p.sma === 'bullish' ? ' selected' : '') + '>多頭 (>0%)</option><option value="bearish"' + (p.sma === 'bearish' ? ' selected' : '') + '>空頭 (<0%)</option></select></div>';
+            html += '<div class="preset-field"><label>周績效 (%)</label><div class="range-row"><input type="number" id="pe_pwMin" placeholder="Min" step="0.1" value="' + (p.perfWeekMin || '') + '"><span>~</span><input type="number" id="pe_pwMax" placeholder="Max" step="0.1" value="' + (p.perfWeekMax || '') + '"></div></div>';
+            html += '<div class="preset-field"><label>月績效 (%)</label><div class="range-row"><input type="number" id="pe_pmMin" placeholder="Min" step="0.1" value="' + (p.perfMonthMin || '') + '"><span>~</span><input type="number" id="pe_pmMax" placeholder="Max" step="0.1" value="' + (p.perfMonthMax || '') + '"></div></div>';
+            html += '<div class="preset-field"><label>周波動率 (%)</label><div class="range-row"><input type="number" id="pe_volMin" placeholder="Min" step="0.1" value="' + (p.volMin || '') + '"><span>~</span><input type="number" id="pe_volMax" placeholder="Max" step="0.1" value="' + (p.volMax || '') + '"></div></div>';
+            body.innerHTML = html;
+        }
+
+        function savePresetEdits() {
+            if (editingPresetIdx >= 0) {
+                var p = filterPresets[editingPresetIdx];
+                p.name = document.getElementById('pe_name').value.trim() || p.name;
+                p.etf = document.getElementById('pe_etf').value === 'true';
+                p.sma = document.getElementById('pe_sma').value;
+                p.perfWeekMin = document.getElementById('pe_pwMin').value;
+                p.perfWeekMax = document.getElementById('pe_pwMax').value;
+                p.perfMonthMin = document.getElementById('pe_pmMin').value;
+                p.perfMonthMax = document.getElementById('pe_pmMax').value;
+                p.volMin = document.getElementById('pe_volMin').value;
+                p.volMax = document.getElementById('pe_volMax').value;
+                savePresets();
+                updatePresetButtonLabels();
+                editingPresetIdx = -1;
+                renderPresetList();
+            } else {
+                closePresetEditor();
+            }
+        }
+
+        function resetPresetDefaults() {
+            if (confirm('確定要恢復所有預設條件嗎？')) {
+                filterPresets = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+                savePresets();
+                updatePresetButtonLabels();
+                editingPresetIdx = -1;
+                renderPresetList();
+            }
+        }
+
+        function updatePresetButtonLabels() {
+            var buttons = document.querySelectorAll('.preset-btn');
+            buttons.forEach(function (btn, i) {
+                if (filterPresets[i]) btn.textContent = filterPresets[i].name;
+            });
+        }
+
+        // Initialize presets on load
+        loadPresets();
+        updatePresetButtonLabels();
+
+        // ========== Watchlist System ==========
+        const WATCHLIST_KEY = 'sp500_watchlists';
+        let watchlists = []; // Array of { id, name, tickers: [] }
+        let activeWatchlistFilter = null; // null or watchlist id
+
+        function loadWatchlists() {
+            try {
+                var json = localStorage.getItem(WATCHLIST_KEY);
+                watchlists = json ? JSON.parse(json) : [];
+            } catch (e) { watchlists = []; }
+        }
+
+        function saveWatchlists() {
+            try {
+                localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlists));
+            } catch (e) { }
+            updateAddToWatchlistBtn();
+            renderWatchlistDropdown();
+        }
+
+        function createWatchlist() {
+            if (watchlists.length >= 10) { alert('最多只能建立 10 組觀察名單'); return; }
+            var nameInput = document.getElementById('newWatchlistName');
+            var name = (nameInput.value || '').trim();
+            if (!name) { alert('請輸入名稱'); return; }
+            watchlists.push({ id: Date.now(), name: name, tickers: [] });
+            nameInput.value = '';
+            saveWatchlists();
+            renderWatchlistModal();
+            updateCreateBtn();
+        }
+
+        function deleteWatchlist(id) {
+            if (!confirm('確定要刪除這組觀察名單嗎？')) return;
+            watchlists = watchlists.filter(function (w) { return w.id !== id; });
+            if (activeWatchlistFilter === id) { activeWatchlistFilter = null; updateDisplay(); }
+            saveWatchlists();
+            renderWatchlistModal();
+            updateCreateBtn();
+        }
+
+        function renameWatchlist(id) {
+            var wl = watchlists.find(function (w) { return w.id === id; });
+            if (!wl) return;
+            var newName = prompt('輸入新名稱:', wl.name);
+            if (newName === null || !newName.trim()) return;
+            wl.name = newName.trim();
+            saveWatchlists();
+            renderWatchlistModal();
+        }
+
+        function addSelectedToWatchlist(id) {
+            var wl = watchlists.find(function (w) { return w.id === id; });
+            if (!wl) return;
+            var added = 0;
+            selectedStocks.forEach(function (ticker) {
+                if (wl.tickers.indexOf(ticker) === -1) {
+                    wl.tickers.push(ticker);
+                    added++;
+                }
+            });
+            saveWatchlists();
+            closeWatchlistDropdown();
+            if (added > 0) {
+                showToast(added + ' 檔個股已加入「' + wl.name + '」');
+            } else {
+                showToast('所選個股已在「' + wl.name + '」中');
+            }
+            renderWatchlistModal();
+        }
+
+        function removeTickerFromWatchlist(wlId, ticker) {
+            var wl = watchlists.find(function (w) { return w.id === wlId; });
+            if (!wl) return;
+            wl.tickers = wl.tickers.filter(function (t) { return t !== ticker; });
+            saveWatchlists();
+            renderWatchlistModal();
+            if (activeWatchlistFilter === wlId) updateDisplay();
+        }
+
+        function loadWatchlistFilter(id) {
+            if (activeWatchlistFilter === id) {
+                activeWatchlistFilter = null; // toggle off
+            } else {
+                activeWatchlistFilter = id;
+            }
+            closeWatchlistModal();
+            updateDisplay();
+        }
+
+        function toggleWatchlistGroupBody(id) {
+            var body = document.getElementById('wl-body-' + id);
+            if (body) body.classList.toggle('open');
+        }
+
+        // ---- Modal UI ----
+        function openWatchlistModal() {
+            loadWatchlists();
+            renderWatchlistModal();
+            updateCreateBtn();
+            document.getElementById('watchlistModal').classList.add('open');
+        }
+
+        function closeWatchlistModal() {
+            document.getElementById('watchlistModal').classList.remove('open');
+        }
+
+        function updateCreateBtn() {
+            var btn = document.getElementById('createWatchlistBtn');
+            btn.disabled = watchlists.length >= 10;
+            btn.textContent = watchlists.length >= 10 ? '已達上限 (10/10)' : '建立 (' + watchlists.length + '/10)';
+        }
+
+        function renderWatchlistModal() {
+            var body = document.getElementById('watchlistModalBody');
+            if (!body) return;
+            if (watchlists.length === 0) {
+                body.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-secondary)">尚未建立觀察名單<br><span style="font-size:0.85rem">在下方輸入名稱建立第一組</span></div>';
+                return;
+            }
+
+            var html = '';
+            watchlists.forEach(function (wl) {
+                var isActive = activeWatchlistFilter === wl.id;
+                var activeBorder = isActive ? 'border-color: var(--accent-color);' : '';
+                html += '<div class="watchlist-group" style="' + activeBorder + '">';
+                html += '<div class="watchlist-group-header" onclick="toggleWatchlistGroupBody(' + wl.id + ')">';
+                html += '<span class="watchlist-group-name">' + (isActive ? '🔵 ' : '') + wl.name + '</span>';
+                html += '<span class="watchlist-group-count">' + wl.tickers.length + ' 檔</span>';
+                html += '<div class="watchlist-group-actions" onclick="event.stopPropagation()">';
+                html += '<button title="載入篩選" onclick="loadWatchlistFilter(' + wl.id + ')">' + (isActive ? '✅' : '🔍') + '</button>';
+                html += '<button title="重新命名" onclick="renameWatchlist(' + wl.id + ')">✏️</button>';
+                html += '<button title="刪除" onclick="deleteWatchlist(' + wl.id + ')">🗑️</button>';
+                html += '</div></div>';
+                html += '<div class="watchlist-group-body" id="wl-body-' + wl.id + '">';
+                if (wl.tickers.length === 0) {
+                    html += '<span class="watchlist-empty">空白 — 勾選個股後點「加入觀察名單」</span>';
+                } else {
+                    wl.tickers.forEach(function (t) {
+                        html += '<span class="watchlist-ticker">' + t + ' <span class="remove-ticker" onclick="removeTickerFromWatchlist(' + wl.id + ',\'' + t + '\')">✕</span></span>';
+                    });
+                }
+                html += '</div></div>';
+            });
+            body.innerHTML = html;
+        }
+
+        // ---- Dropdown for adding selected stocks ----
+        function updateAddToWatchlistBtn() {
+            var btn = document.getElementById('addToWatchlistBtn');
+            if (btn) btn.disabled = selectedStocks.size === 0;
+        }
+
+        function toggleWatchlistDropdown() {
+            if (selectedStocks.size === 0) return;
+            renderWatchlistDropdown();
+            document.getElementById('watchlistDropdownMenu').classList.toggle('open');
+        }
+
+        function closeWatchlistDropdown() {
+            var menu = document.getElementById('watchlistDropdownMenu');
+            if (menu) menu.classList.remove('open');
+        }
+
+        function renderWatchlistDropdown() {
+            var menu = document.getElementById('watchlistDropdownMenu');
+            if (!menu) return;
+            loadWatchlists();
+            var html = '';
+            if (watchlists.length === 0) {
+                html += '<button class="watchlist-dropdown-item" onclick="closeWatchlistDropdown();openWatchlistModal()">尚無觀察名單，點此建立</button>';
+            } else {
+                watchlists.forEach(function (wl) {
+                    html += '<button class="watchlist-dropdown-item" onclick="addSelectedToWatchlist(' + wl.id + ')">' + wl.name + ' (' + wl.tickers.length + ')</button>';
+                });
+                html += '<div class="watchlist-dropdown-sep"></div>';
+                html += '<button class="watchlist-dropdown-item" onclick="closeWatchlistDropdown();openWatchlistModal()">管理觀察名單...</button>';
+            }
+            menu.innerHTML = html;
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#watchlistDropdown')) {
+                closeWatchlistDropdown();
+            }
+        });
+
+        // Toast notification
+        function showToast(msg) {
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card-bg);color:var(--text-primary);padding:0.75rem 1.5rem;border-radius:0.75rem;border:1px solid var(--border-color);box-shadow:0 8px 30px rgba(0,0,0,0.3);z-index:9999;font-size:0.9rem;transition:opacity 0.3s;';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(function () { toast.style.opacity = '0'; }, 2000);
+            setTimeout(function () { toast.remove(); }, 2500);
+        }
+
+        // ========== Settings Persistence (localStorage) ==========
+        const STORAGE_KEY = 'sp500_filter_settings';
+
+        function saveSettings() {
+            try {
+                var settings = {
+                    search: document.getElementById('searchInput').value,
+                    isETFExcluded: isETFExcluded,
+                    theme: document.body.classList.contains('light-mode') ? 'light' : 'dark',
+                    sectorMode: document.getElementById('sectorMode').value,
+                    activeSectors: Array.from(activeSectors),
+                    industryMode: (document.getElementById('industryMode') || {}).value || 'include',
+                    activeIndustries: Array.from(activeIndustries),
+                    priceMin: document.getElementById('priceMin').value,
+                    priceMax: document.getElementById('priceMax').value,
+                    capMin: document.getElementById('capMin').value,
+                    capMax: document.getElementById('capMax').value,
+                    perfWeekMin: document.getElementById('perfWeekMin').value,
+                    perfWeekMax: document.getElementById('perfWeekMax').value,
+                    perfMonthMin: document.getElementById('perfMonthMin').value,
+                    perfMonthMax: document.getElementById('perfMonthMax').value,
+                    volMin: document.getElementById('volMin').value,
+                    volMax: document.getElementById('volMax').value,
+                    smaFilter: smaFilter,
+                    jpmOnly: (document.getElementById('jpmOnly') || {}).checked || false,
+                    sortKey: currentSort.key,
+                    sortDirection: currentSort.direction,
+                    filterPanelOpen: document.getElementById('filterPanel').classList.contains('open'),
+                    selectedStocks: Array.from(selectedStocks),
+                    activeWatchlistFilter: activeWatchlistFilter
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            } catch (e) { /* ignore storage errors */ }
+        }
+
+        function restoreSettings() {
+            try {
+                var json = localStorage.getItem(STORAGE_KEY);
+                if (!json) return;
+                var s = JSON.parse(json);
+
+                // Theme
+                if (s.theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    var tb = document.getElementById('themeToggle');
+                    if (tb) tb.textContent = '🌙 深色模式';
+                } else {
+                    document.body.classList.remove('light-mode');
+                    var tb2 = document.getElementById('themeToggle');
+                    if (tb2) tb2.textContent = '☀️ 一般模式';
+                }
+
+                // Search
+                if (s.search) document.getElementById('searchInput').value = s.search;
+
+                // ETF
+                if (s.isETFExcluded) {
+                    isETFExcluded = true;
+                    var etfBtn = document.getElementById('etfToggle');
+                    if (etfBtn) { etfBtn.classList.add('active'); etfBtn.textContent = '顯示 ETF'; }
+                }
+
+                // Range inputs
+                if (s.priceMin) document.getElementById('priceMin').value = s.priceMin;
+                if (s.priceMax) document.getElementById('priceMax').value = s.priceMax;
+                if (s.capMin) document.getElementById('capMin').value = s.capMin;
+                if (s.capMax) document.getElementById('capMax').value = s.capMax;
+                if (s.perfWeekMin) document.getElementById('perfWeekMin').value = s.perfWeekMin;
+                if (s.perfWeekMax) document.getElementById('perfWeekMax').value = s.perfWeekMax;
+                if (s.perfMonthMin) document.getElementById('perfMonthMin').value = s.perfMonthMin;
+                if (s.perfMonthMax) document.getElementById('perfMonthMax').value = s.perfMonthMax;
+                if (s.volMin) document.getElementById('volMin').value = s.volMin;
+                if (s.volMax) document.getElementById('volMax').value = s.volMax;
+
+                // SMA filter
+                if (s.smaFilter && s.smaFilter !== 'all') {
+                    setSmaFilterDirect(s.smaFilter);
+                }
+
+                // JPM
+                if (s.jpmOnly) {
+                    var jpmCb = document.getElementById('jpmOnly');
+                    if (jpmCb) jpmCb.checked = true;
+                }
+
+                // Sector mode
+                if (s.sectorMode) document.getElementById('sectorMode').value = s.sectorMode;
+
+                // Active sectors (restore after data loads, checkboxes exist)
+                if (s.activeSectors && s.activeSectors.length > 0) {
+                    s.activeSectors.forEach(function (sector) {
+                        activeSectors.add(sector);
+                        var safeId = 'sect-' + sector.replace(/[^a-zA-Z0-9]/g, '_');
+                        var cb = document.getElementById(safeId);
+                        if (cb) cb.checked = true;
+                    });
+                }
+
+                // Industry mode
+                if (s.industryMode) {
+                    var indMode = document.getElementById('industryMode');
+                    if (indMode) indMode.value = s.industryMode;
+                }
+
+                // Active industries
+                if (s.activeIndustries && s.activeIndustries.length > 0) {
+                    s.activeIndustries.forEach(function (ind) {
+                        activeIndustries.add(ind);
+                        var safeId = 'ind-' + ind.replace(/[^a-zA-Z0-9]/g, '_');
+                        var cb = document.getElementById(safeId);
+                        if (cb) cb.checked = true;
+                    });
+                }
+
+                // Sort
+                if (s.sortKey) currentSort.key = s.sortKey;
+                if (s.sortDirection) currentSort.direction = s.sortDirection;
+
+                // Filter panel
+                if (s.filterPanelOpen) {
+                    document.getElementById('filterPanel').classList.add('open');
+                }
+
+                // Selected stocks
+                if (s.selectedStocks && s.selectedStocks.length > 0) {
+                    s.selectedStocks.forEach(function (t) { selectedStocks.add(t); });
+                }
+
+                // Active watchlist filter
+                if (s.activeWatchlistFilter) {
+                    activeWatchlistFilter = s.activeWatchlistFilter;
+                }
+
+            } catch (e) { /* ignore parse errors */ }
+        }
+
+        // Initialize
+        fetchData();
+    </script>
+
+    <!-- Watchlist Modal -->
+    <div id="watchlistModal" class="watchlist-modal-overlay" onclick="if(event.target===this)closeWatchlistModal()">
+        <div class="watchlist-modal">
+            <div class="watchlist-modal-header">
+                <h3>📋 觀察名單管理</h3>
+                <button class="close-btn" onclick="closeWatchlistModal()">&times;</button>
+            </div>
+            <div class="watchlist-modal-body" id="watchlistModalBody">
+                <!-- Rendered by JS -->
+            </div>
+            <div class="watchlist-modal-footer">
+                <input type="text" id="newWatchlistName" placeholder="輸入新觀察名單名稱..." maxlength="30">
+                <button class="watchlist-add-btn" id="createWatchlistBtn" onclick="createWatchlist()">建立
+                    (最多10組)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Editor Modal -->
+    <div id="presetEditorModal" class="preset-modal-overlay" onclick="if(event.target===this)closePresetEditor()">
+        <div class="preset-modal">
+            <div class="preset-modal-header">
+                <h3 id="presetEditorTitle">自訂篩選條件</h3>
+                <button class="close-btn" onclick="closePresetEditor()"
+                    style="background:none;border:none;font-size:1.5rem;color:var(--text-secondary);cursor:pointer;">&times;</button>
+            </div>
+            <div class="preset-modal-body" id="presetEditorBody">
+                <!-- Rendered by JS -->
+            </div>
+            <div class="preset-modal-footer">
+                <button onclick="resetPresetDefaults()">恢復預設</button>
+                <button class="save-btn" onclick="savePresetEdits()">儲存</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
